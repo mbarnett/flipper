@@ -66,15 +66,13 @@ module Flipper
           return @app.call(env)
         end
 
-        flipper.memoize do |memoizer|
+        flipper.memoize do
           case @opts[:preload]
           when true then flipper.preload_all
           when Array then flipper.preload(@opts[:preload])
           end
 
-          response = @app.call(env)
-          response[2] = Rack::BodyProxy.new(response[2], &memoizer.reset_later)
-          response
+          @app.call(env)
         end
       end
     end
