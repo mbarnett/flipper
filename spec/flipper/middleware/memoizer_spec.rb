@@ -27,31 +27,26 @@ RSpec.describe Flipper::Middleware::Memoizer do
   end
 
   RSpec.shared_examples_for 'flipper middleware' do
-    it 'delegates' do
+    it 'delegates to app using memoized adapter' do
       called = false
       app = lambda do |_env|
         called = true
+        expect(flipper.adapter).to be_instance_of(Flipper::Adapters::Memoizable)
         [200, {}, nil]
       end
       middleware = described_class.new(app)
       middleware.call(env)
       expect(called).to eq(true)
+      expect(flipper.adapter).to eq(adapter)
     end
 
-    it 'clears the local cache with a successful request' do
-      flipper.adapter.cache['hello'] = 'world'
-      get '/', {}, 'flipper' => flipper
-      expect(flipper.adapter.cache).to be_empty
-    end
-
-    it 'clears the local cache even when the request raises an error' do
-      flipper.adapter.cache['hello'] = 'world'
+    it 'resets the adapter even when the request raises an error' do
       begin
         get '/fail', {}, 'flipper' => flipper
       rescue
         nil
       end
-      expect(flipper.adapter.cache).to be_empty
+      expect(flipper.adapter).to be(adapter)
     end
 
     it 'caches getting a feature for duration of request' do
@@ -295,13 +290,7 @@ RSpec.describe Flipper::Middleware::Memoizer do
 
   context 'defaults to Flipper' do
     it 'caches getting a feature for duration of request' do
-      Flipper.configure do |config|
-        config.default do
-          memory_adapter = Flipper::Adapters::Memory.new
-          logged_adapter = Flipper::Adapters::OperationLogger.new(memory_adapter)
-          Flipper.new(logged_adapter)
-        end
-      end
+      Flipper.instance = flipper
       Flipper.enable(:stats)
       Flipper.adapter.reset # clear the log of operations
 

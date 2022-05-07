@@ -6,21 +6,6 @@ RSpec.describe Flipper::DSL do
   let(:adapter) { Flipper::Adapters::Memory.new }
 
   describe '#initialize' do
-    context 'when using default memoize strategy' do
-      it 'wraps the given adapter with Flipper::Adapters::Memoizable' do
-        dsl = described_class.new(adapter)
-        expect(dsl.adapter.class).to be(Flipper::Adapters::Memoizable)
-        expect(dsl.adapter.adapter).to be(adapter)
-      end
-    end
-
-    context 'when disabling memoization' do
-      it 'uses the given adapter directly' do
-        dsl = described_class.new(adapter, memoize: false)
-        expect(dsl.adapter).to be(adapter)
-      end
-    end
-
     it 'defaults instrumenter to noop' do
       dsl = described_class.new(adapter)
       expect(dsl.instrumenter).to be(Flipper::Instrumenters::Noop)
@@ -33,6 +18,13 @@ RSpec.describe Flipper::DSL do
         dsl = described_class.new(adapter, instrumenter: instrumenter)
         expect(dsl.instrumenter).to be(instrumenter)
       end
+    end
+  end
+
+  describe "#adapter" do
+    it 'uses the given adapter directly' do
+      dsl = described_class.new(adapter, memoize: false)
+      expect(dsl.adapter).to be(adapter)
     end
   end
 
@@ -364,20 +356,6 @@ RSpec.describe Flipper::DSL do
       expect(subject.adapter).to be_a(Flipper::Adapters::Memory)
       expect(subject.memoizing?).to be(false)
       expect(called).to be(true)
-    end
-
-    it "allows delaying reset" do
-      expect(subject.memoizing?).to be(false)
-
-      reset = subject.memoize { |m| m.reset_later }
-
-      expect(subject.memoizing?).to be(true)
-      expect(subject.adapter).to be_a(Flipper::Adapters::Memoizable)
-
-      reset.call
-
-      expect(subject.memoizing?).to be(false)
-      expect(subject.adapter).to be_a(Flipper::Adapters::Memory)
     end
   end
 end
