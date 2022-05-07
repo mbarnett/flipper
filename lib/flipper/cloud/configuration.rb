@@ -3,6 +3,9 @@ require "flipper/adapters/http"
 require "flipper/adapters/memory"
 require "flipper/adapters/dual_write"
 require "flipper/adapters/sync"
+require "flipper/cloud/instrumenter"
+require "flipper/cloud/registry"
+require "brow"
 
 module Flipper
   module Cloud
@@ -63,13 +66,11 @@ module Flipper
       # occur or not.
       attr_accessor :sync_secret
 
-      attr_accessor :app_path
-
       def initialize(options = {})
         @token = options.fetch(:token) { ENV["FLIPPER_CLOUD_TOKEN"] }
 
         if @token.nil?
-          raise ArgumentError, "Flipper::Cloud token is missing. Please set FLIPPER_CLOUD_TOKEN or provide the token (e.g. Flipper::Cloud.new('token'))."
+          raise ArgumentError, "Flipper::Cloud token is missing. Please set FLIPPER_CLOUD_TOKEN or provide the token (e.g. Flipper::Cloud.new(token: 'token'))."
         end
 
         if ENV["FLIPPER_CLOUD_SYNC_METHOD"]
@@ -77,7 +78,6 @@ module Flipper
         end
         self.sync_method = options[:sync_method] if options[:sync_method]
 
-        @instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
         @read_timeout = options.fetch(:read_timeout) { ENV.fetch("FLIPPER_CLOUD_READ_TIMEOUT", 5).to_f }
         @open_timeout = options.fetch(:open_timeout) { ENV.fetch("FLIPPER_CLOUD_OPEN_TIMEOUT", 5).to_f }
         @write_timeout = options.fetch(:write_timeout) { ENV.fetch("FLIPPER_CLOUD_WRITE_TIMEOUT", 5).to_f }
@@ -86,8 +86,17 @@ module Flipper
         @local_adapter = options.fetch(:local_adapter) { Adapters::Memory.new }
         @debug_output = options[:debug_output]
         @adapter_block = ->(adapter) { adapter }
-        @app_path = options.fetch(:app_path, '_flipper')
         self.url = options.fetch(:url) { ENV.fetch("FLIPPER_CLOUD_URL", DEFAULT_URL) }
+
+        instrumenter = options.fetch(:instrumenter, Instrumenters::Noop)
+
+        # This is alpha. Don't use this unless you are me. And you are not me.
+        cloud_instrument = options.fetch(:cloud_instrument) { ENV["FLIPPER_CLOUD_INSTRUMENT"] == "1" }
+        @instrumenter = if cloud_instrument
+          Instrumenter.new(brow: brow, instrumenter: instrumenter)
+        else
+          instrumenter
+        end
       end
 
       # Public: Read or customize the http adapter. Calling without a block will
@@ -117,6 +126,24 @@ module Flipper
           instrumenter: instrumenter,
           interval: sync_interval,
         }).call
+      end
+
+      def brow
+        uri = URI.parse(url)
+        uri.path = "#{uri.path}/events".squeeze("/")
+        events_url = uri.to_s
+
+        Registry.default.fetch(events_url) {
+          Brow::Client.new({
+            url: events_url,
+            headers: {
+              "Accept" => "application/json",
+              "Content-Type" => "application/json",
+              "User-Agent" => "Flipper v#{VERSION} via Brow v#{Brow::VERSION}",
+              "Flipper-Cloud-Token" => @token,
+            }
+          })
+        }
       end
 
       # Public: The method that will be used to synchronize local adapter with
@@ -154,12 +181,6 @@ module Flipper
           debug_output: @debug_output,
           headers: {
             "Flipper-Cloud-Token" => @token,
-            "Feature-Flipper-Token" => @token,
-            "Client-Lang" => "ruby",
-            "Client-Lang-Version" => "#{RUBY_VERSION} p#{RUBY_PATCHLEVEL} (#{RUBY_RELEASE_DATE})",
-            "Client-Platform" => RUBY_PLATFORM,
-            "Client-Engine" => defined?(RUBY_ENGINE) ? RUBY_ENGINE : "",
-            "Client-Hostname" => Socket.gethostname,
           },
         })
       end

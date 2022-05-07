@@ -1,6 +1,4 @@
-require 'helper'
 require 'flipper/adapters/active_record'
-require 'flipper/spec/shared_adapter_specs'
 
 # Turn off migration logging for specs
 ActiveRecord::Migration.verbose = false
@@ -51,7 +49,7 @@ RSpec.describe Flipper::Adapters::ActiveRecord do
       Flipper.configuration = nil
       Flipper.instance = nil
 
-      load 'flipper-active_record.rb'
+      load 'flipper/adapters/active_record.rb'
       ActiveSupport.run_load_hooks(:active_record, ActiveRecord::Base)
     end
 

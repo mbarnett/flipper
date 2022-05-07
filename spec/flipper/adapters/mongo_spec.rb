@@ -1,6 +1,4 @@
-require 'helper'
 require 'flipper/adapters/mongo'
-require 'flipper/spec/shared_adapter_specs'
 
 Mongo::Logger.logger.level = Logger::INFO
 
@@ -32,7 +30,7 @@ RSpec.describe Flipper::Adapters::Mongo do
     Flipper.configuration = nil
     Flipper.instance = nil
 
-    load 'flipper-mongo.rb'
+    load 'flipper/adapters/mongo.rb'
 
     ENV["MONGO_URL"] ||= "mongodb://127.0.0.1:27017/testing"
     expect(Flipper.adapter).to be_a(Flipper::Adapters::Mongo)

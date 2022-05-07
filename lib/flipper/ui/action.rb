@@ -3,6 +3,7 @@ require 'flipper/ui/configuration'
 require 'flipper/ui/error'
 require 'erubi'
 require 'json'
+require 'sanitize'
 
 module Flipper
   module UI
@@ -25,6 +26,36 @@ module Flipper
                                              'put'.freeze,
                                              'delete'.freeze,
                                            ]).freeze
+
+      SOURCES = {
+        bootstrap_css: {
+          src: 'https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css'.freeze,
+          hash: 'sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l'.freeze
+        }.freeze,
+        jquery_js: {
+          src: 'https://code.jquery.com/jquery-3.6.0.slim.js'.freeze,
+          hash: 'sha256-HwWONEZrpuoh951cQD1ov2HUK5zA5DwJ1DNUXaM6FsY='.freeze
+        }.freeze,
+        popper_js: {
+          src: 'https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js'.freeze,
+          hash: 'sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q'.freeze
+        }.freeze,
+        bootstrap_js: {
+          src: 'https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js'.freeze,
+          hash: 'sha384-+YQ4JLhjyBLPDQt//I+STsc9iw4uQqACwlvpslubQzn4u2UU2UFM80nGisd026JF'.freeze
+        }.freeze
+      }.freeze
+      SCRIPT_SRCS = SOURCES.values_at(:jquery_js, :popper_js, :bootstrap_js).map { |s| s[:src] }
+      STYLE_SRCS = SOURCES.values_at(:bootstrap_css).map { |s| s[:src] }
+      CONTENT_SECURITY_POLICY = <<-CSP.delete("\n")
+        default-src 'none';
+        img-src 'self';
+        font-src 'self';
+        script-src 'report-sample' 'self' #{SCRIPT_SRCS.join(' ')};
+        style-src 'self' 'unsafe-inline' #{STYLE_SRCS.join(' ')};
+        style-src-attr 'unsafe-inline' ;
+        style-src-elem 'self' #{STYLE_SRCS.join(' ')};
+      CSP
 
       # Public: Call this in subclasses so the action knows its route.
       #
@@ -130,6 +161,7 @@ module Flipper
       # Returns a response.
       def view_response(name)
         header 'Content-Type', 'text/html'
+        header 'Content-Security-Policy', CONTENT_SECURITY_POLICY
         body = view_with_layout { view_without_layout name }
         halt [@code, @headers, [body]]
       end
@@ -151,7 +183,7 @@ module Flipper
       # location - The String location to set the Location header to.
       def redirect_to(location)
         status 302
-        header 'Location', "#{script_name}#{location}"
+        header 'Location', "#{script_name}#{Rack::Utils.escape_path(location)}"
         halt [@code, @headers, ['']]
       end
 
@@ -207,6 +239,7 @@ module Flipper
       def view(name)
         path = views_path.join("#{name}.erb")
         raise "Template does not exist: #{path}" unless path.exist?
+
         eval(Erubi::Engine.new(path.read, escape: true).src)
       end
 
@@ -236,6 +269,22 @@ module Flipper
 
       def valid_request_method?
         VALID_REQUEST_METHOD_NAMES.include?(request_method_name)
+      end
+
+      def bootstrap_css
+        SOURCES[:bootstrap_css]
+      end
+
+      def bootstrap_js
+        SOURCES[:bootstrap_js]
+      end
+
+      def popper_js
+        SOURCES[:popper_js]
+      end
+
+      def jquery_js
+        SOURCES[:jquery_js]
       end
     end
   end

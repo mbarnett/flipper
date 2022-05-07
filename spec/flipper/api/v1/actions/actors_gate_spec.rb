@@ -1,5 +1,3 @@
-require 'helper'
-
 RSpec.describe Flipper::Api::V1::Actions::ActorsGate do
   let(:app) { build_api(flipper) }
   let(:actor) { Flipper::Actor.new('1') }
@@ -44,7 +42,7 @@ RSpec.describe Flipper::Api::V1::Actions::ActorsGate do
 
   describe 'enable feature with slash in name' do
     before do
-      flipper[:my_feature].disable_actor(actor)
+      flipper["my/feature"].disable_actor(actor)
       post '/features/my/feature/actors', flipper_id: actor.flipper_id
     end
 
@@ -52,6 +50,24 @@ RSpec.describe Flipper::Api::V1::Actions::ActorsGate do
       expect(last_response.status).to eq(200)
       expect(flipper["my/feature"].enabled?(actor)).to be_truthy
       expect(flipper["my/feature"].enabled_gate_names).to eq([:actor])
+    end
+
+    it 'returns decorated feature with actor enabled' do
+      gate = json_response['gates'].find { |gate| gate['key'] == 'actors' }
+      expect(gate['value']).to eq(['1'])
+    end
+  end
+
+  describe 'enable feature with space in name' do
+    before do
+      flipper["sp ace"].disable_actor(actor)
+      post '/features/sp%20ace/actors', flipper_id: actor.flipper_id
+    end
+
+    it 'enables feature for actor' do
+      expect(last_response.status).to eq(200)
+      expect(flipper["sp ace"].enabled?(actor)).to be_truthy
+      expect(flipper["sp ace"].enabled_gate_names).to eq([:actor])
     end
 
     it 'returns decorated feature with actor enabled' do

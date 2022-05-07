@@ -1,4 +1,3 @@
-require 'helper'
 require 'sequel'
 
 Sequel::Model.db = Sequel.sqlite(':memory:')
@@ -6,7 +5,6 @@ Sequel.extension :migration, :core_extensions
 
 require 'flipper/adapters/sequel'
 require 'generators/flipper/templates/sequel_migration'
-require 'flipper/spec/shared_adapter_specs'
 
 RSpec.describe Flipper::Adapters::Sequel do
   subject do
@@ -34,7 +32,7 @@ RSpec.describe Flipper::Adapters::Sequel do
       Flipper.configuration = nil
       Flipper.instance = nil
 
-      load 'flipper-sequel.rb'
+      load 'flipper/adapters/sequel.rb'
     end
 
     it 'configures itself' do

@@ -1,4 +1,4 @@
-require 'climate_control'
+require 'ice_age'
 require 'json'
 require 'rack/test'
 
@@ -31,7 +31,7 @@ module SpecHelpers
   end
 
   def api_error_code_reference_url
-    'https://github.com/jnunemaker/flipper/tree/master/docs/api#error-code-reference'
+    'https://flippercloud.io/docs/api#error-code-reference'
   end
 
   def api_not_found_response
@@ -58,8 +58,21 @@ module SpecHelpers
     }
   end
 
-  def with_modified_env(options, &block)
-    ClimateControl.modify(options, &block)
+  def silence
+    # Store the original stderr and stdout in order to restore them later
+    original_stderr = $stderr
+    original_stdout = $stdout
+
+    # Redirect stderr and stdout
+    output = $stderr = $stdout = StringIO.new
+
+    yield
+
+    $stderr = original_stderr
+    $stdout = original_stdout
+
+    # Return output
+    output.string
   end
 end
 

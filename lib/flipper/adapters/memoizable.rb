@@ -40,24 +40,20 @@ module Flipper
 
       # Public
       def add(feature)
-        result = @adapter.add(feature)
-        expire_features_set
-        result
+        @adapter.add(feature).tap { expire_features_set }
       end
 
       # Public
       def remove(feature)
-        result = @adapter.remove(feature)
-        expire_features_set
-        expire_feature(feature)
-        result
+        @adapter.remove(feature).tap do
+          expire_features_set
+          expire_feature(feature)
+        end
       end
 
       # Public
       def clear(feature)
-        result = @adapter.clear(feature)
-        expire_feature(feature)
-        result
+        @adapter.clear(feature).tap { expire_feature(feature) }
       end
 
       # Public
@@ -107,16 +103,12 @@ module Flipper
 
       # Public
       def enable(feature, gate, thing)
-        result = @adapter.enable(feature, gate, thing)
-        expire_feature(feature)
-        result
+        @adapter.enable(feature, gate, thing).tap { expire_feature(feature) }
       end
 
       # Public
       def disable(feature, gate, thing)
-        result = @adapter.disable(feature, gate, thing)
-        expire_feature(feature)
-        result
+        @adapter.disable(feature, gate, thing).tap { expire_feature(feature) }
       end
 
       private

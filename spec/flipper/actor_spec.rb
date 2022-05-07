@@ -1,5 +1,3 @@
-require 'helper'
-
 RSpec.describe Flipper::Actor do
   it 'initializes with and knows flipper_id' do
     actor = described_class.new("User;235")
@@ -43,6 +41,16 @@ RSpec.describe Flipper::Actor do
       actor1 = described_class.new("User;235")
       actor2 = Struct.new(:flipper_id).new("User;235")
       expect(actor1.==(actor2)).to be(false)
+    end
+  end
+
+  describe '#hash' do
+    it 'returns a hash-value based on the flipper id' do
+      h = {
+        described_class.new("User;123") => true
+      }
+      expect(h).to have_key(described_class.new("User;123"))
+      expect(h).not_to have_key(described_class.new("User;456"))
     end
   end
 end

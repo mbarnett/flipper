@@ -1,5 +1,3 @@
-require 'helper'
-
 RSpec.describe Flipper::UI::Actions::BooleanGate do
   let(:token) do
     if Rack::Protection::AuthenticityToken.respond_to?(:random_token)
@@ -28,6 +26,24 @@ RSpec.describe Flipper::UI::Actions::BooleanGate do
       it 'redirects back to feature' do
         expect(last_response.status).to be(302)
         expect(last_response.headers['Location']).to eq('/features/search')
+      end
+    end
+
+    context "with space in feature name" do
+      before do
+        flipper.disable :search
+        post 'features/sp%20ace/boolean',
+             { 'action' => 'Enable', 'authenticity_token' => token },
+             'rack.session' => session
+      end
+
+      it 'updates feature' do
+        expect(flipper.enabled?("sp ace")).to be(true)
+      end
+
+      it 'redirects back to feature' do
+        expect(last_response.status).to be(302)
+        expect(last_response.headers['Location']).to eq('/features/sp%20ace')
       end
     end
 

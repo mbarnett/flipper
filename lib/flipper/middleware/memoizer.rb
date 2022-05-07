@@ -15,7 +15,7 @@ module Flipper
       #   use Flipper::Middleware::Memoizer
       #
       #   # using with preload_all features
-      #   use Flipper::Middleware::Memoizer, preload_all: true
+      #   use Flipper::Middleware::Memoizer, preload: true
       #
       #   # using with preload specific features
       #   use Flipper::Middleware::Memoizer, preload: [:stats, :search, :some_feature]
@@ -59,6 +59,12 @@ module Flipper
 
       def memoized_call(env)
         flipper = env.fetch(@env_key) { Flipper }
+
+        # Already memoizing. This instance does not need to do anything.
+        if flipper.memoizing?
+          warn "Flipper::Middleware::Memoizer appears to be running twice. Read how to resolve this at https://github.com/jnunemaker/flipper/pull/523"
+          return @app.call(env)
+        end
 
         flipper.memoize do |memoizer|
           case @opts[:preload]

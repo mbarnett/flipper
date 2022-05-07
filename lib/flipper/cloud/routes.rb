@@ -1,12 +1,13 @@
 # Default routes loaded by Flipper::Cloud::Engine
 Rails.application.routes.draw do
-  config = Flipper.configuration
-  cloud_config = config.default.cloud_configuration
+  if ENV["FLIPPER_CLOUD_TOKEN"] && ENV["FLIPPER_CLOUD_SYNC_SECRET"]
+    config = Rails.application.config.flipper
 
-  app = Flipper::Cloud.app(
-    env_key: config.env_key,
-    memoizer_options: { preload: config.preload }
-  )
+    cloud_app = Flipper::Cloud.app(nil,
+      env_key: config.env_key,
+      memoizer_options: { preload: config.preload }
+    )
 
-  mount app, at: cloud_config.app_path if cloud_config.sync_method == :webhook
+    mount cloud_app, at: config.cloud_path
+  end
 end

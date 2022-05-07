@@ -9,9 +9,8 @@
 #   http://localhost:9999/
 #
 require 'bundler/setup'
-require "flipper-ui"
+require "flipper/ui"
 require "flipper/adapters/pstore"
-require "active_support/notifications"
 
 Flipper.register(:admins) { |actor|
   actor.respond_to?(:admin?) && actor.admin?
@@ -20,16 +19,6 @@ Flipper.register(:admins) { |actor|
 Flipper.register(:early_access) { |actor|
   actor.respond_to?(:early?) && actor.early?
 }
-
-# Setup logging of flipper calls.
-if ENV["LOG"] == "1"
-  $logger = Logger.new(STDOUT)
-  require "flipper/instrumentation/log_subscriber"
-  Flipper::Instrumentation::LogSubscriber.logger = $logger
-end
-
-adapter = Flipper::Adapters::PStore.new
-flipper = Flipper.new(adapter, instrumenter: ActiveSupport::Notifications)
 
 Flipper::UI.configure do |config|
   # config.banner_text = 'Production Environment'
@@ -53,17 +42,17 @@ Flipper::UI.configure do |config|
 end
 
 # You can uncomment these to get some default data:
-# flipper[:search_performance_another_long_thing].enable
-# flipper[:gauges_tracking].enable
-# flipper[:unused].disable
-# flipper[:suits].enable_actor Flipper::Actor.new('1')
-# flipper[:suits].enable_actor Flipper::Actor.new('6')
-# flipper[:secrets].enable_group :admins
-# flipper[:secrets].enable_group :early_access
-# flipper[:logging].enable_percentage_of_time 5
-# flipper[:new_cache].enable_percentage_of_actors 15
-# flipper["a/b"].add
+# Flipper.enable(:search_performance_another_long_thing)
+# Flipper.disable(:gauges_tracking)
+# Flipper.disable(:unused)
+# Flipper.enable_actor(:suits, Flipper::Actor.new('1'))
+# Flipper.enable_actor(:suits, Flipper::Actor.new('6'))
+# Flipper.enable_group(:secrets, :admins)
+# Flipper.enable_group(:secrets, :early_access)
+# Flipper.enable_percentage_of_time(:logging, 5)
+# Flipper.enable_percentage_of_actors(:new_cache, 15)
+# Flipper.add("a/b")
 
-run Flipper::UI.app(flipper) { |builder|
+run Flipper::UI.app { |builder|
   builder.use Rack::Session::Cookie, secret: "_super_secret"
 }

@@ -9,7 +9,7 @@ end
 Gem::Specification.new do |gem|
   gem.authors       = ['John Nunemaker']
   gem.email         = ['nunemaker@gmail.com']
-  gem.summary       = 'FeatureFlipper.com adapter for Flipper'
+  gem.summary       = 'FlipperCloud.io adapter for Flipper'
   gem.license       = 'MIT'
   gem.homepage      = 'https://github.com/jnunemaker/flipper'
 
@@ -24,4 +24,5 @@ Gem::Specification.new do |gem|
   gem.metadata      = Flipper::METADATA
 
   gem.add_dependency 'flipper', "~> #{Flipper::VERSION}"
+  gem.add_dependency "brow", "~> 0.4.1"
 end

@@ -1,3 +1,81 @@
+## Unreleased
+
+### Additions/Changes
+
+* Added failsafe adapter (https://github.com/jnunemaker/flipper/pull/626)
+
+## 0.24.1
+
+### Additions/Changes
+
+* flipper-api: `exclude_gates` parameter to exclude gate data in GETs (https://github.com/jnunemaker/flipper/pull/572).
+* Make it possible to disable internal memoization (https://github.com/jnunemaker/flipper/pull/612).
+* Add Flipper::Actor#hash so actors can be hash keys (https://github.com/jnunemaker/flipper/pull/616).
+* Pretty Up `rails routes` again and make rack-protection dependency less strict (https://github.com/jnunemaker/flipper/pull/619).
+* Add kwargs for method_missing using ruby 3.0 (https://github.com/jnunemaker/flipper/pull/620).
+* Relax the rack-protection dependency (https://github.com/jnunemaker/flipper/commit/c1cb9cd78140c2b09123687642558101e6e5d37d).
+
+## 0.24.0
+
+### Additions/Changes
+
+* Add Ruby 3.0 and 3.1 to the CI matrix and fix groups block arity check for ruby 3 (https://github.com/jnunemaker/flipper/pull/601)
+* Removed support for Ruby 2.5 (which was end of line 9 months ago)
+* Add (alpha) client side instrumentation of events to cloud (https://github.com/jnunemaker/flipper/pull/602)
+* Fix deprecated uses of Redis#pipelined (https://github.com/jnunemaker/flipper/pull/603). redis-rb >= 3 now required.
+* Fix Flipper UI Rack application when `Rack::Session::Pool` is used to build it (https://github.com/jnunemaker/flipper/pull/606).
+
+## 0.23.1
+
+### Additions/Changes
+
+* Relax dalli version constraint (https://github.com/jnunemaker/flipper/pull/596)
+
+### Bug Fixes
+
+* Fix railtie initialization to mount middleware after config/intializers/* (https://github.com/jnunemaker/flipper/pull/586)
+
+## 0.23.0
+
+### Additions/Changes
+
+* Allow some HTML in banner and descriptions (https://github.com/jnunemaker/flipper/pull/570).
+* Moved some cloud headers to http client (https://github.com/jnunemaker/flipper/pull/567).
+* Update flipper-ui jquery and bootstrap versions (https://github.com/jnunemaker/flipper/issues/565 and https://github.com/jnunemaker/flipper/pull/566).
+* Moved docs to www.flippercloud.io/docs (https://github.com/jnunemaker/flipper/pull/574).
+* PStore adapter now defaults to thread safe and no longer supports `.thread_safe` (https://github.com/jnunemaker/flipper/commit/4048704fefe41b716015294a19a0b94546637630).
+* Add failover adapter (https://github.com/jnunemaker/flipper/pull/584).
+* Improve http adapter error message (https://github.com/jnunemaker/flipper/pull/587).
+* Rails 7 support (mostly in https://github.com/jnunemaker/flipper/pull/592).
+
+## 0.22.2
+
+### Additions/Changes
+
+* Allow adding multiple actors at once in flipper-ui via comma separation (configurable via `Flipper::UI.configuration.actors_separator`) (https://github.com/jnunemaker/flipper/pull/556)
+
+### Bug Fixes
+
+* Fix railtie initialization to avoid altering middleware order (https://github.com/jnunemaker/flipper/pull/563)
+
+## 0.22.1
+
+### Additions/Changes
+
+* Remove Octicons and replace with a pure CSS status circle (https://github.com/jnunemaker/flipper/pull/547)
+* Rescue unique errors in AR and Sequel when setting value (https://github.com/jnunemaker/flipper/commit/87f5a98bce7baad7a27b75b5bce3256967769f27)
+* Add a Content-Security-Policy to flipper-ui (https://github.com/jnunemaker/flipper/pull/552)
+* Fix Synchronizer issue that occurs for ActiveRecord adapter (https://github.com/jnunemaker/flipper/pull/554)
+
+## 0.22.0
+
+### Additions/Changes
+
+* Enable log subscriber by default in Rails (https://github.com/jnunemaker/flipper/pull/525)
+* Remove memoizer from API and UI (https://github.com/jnunemaker/flipper/pull/527). If you are using the UI or API without configuring the default instance of Flipper, you'll need to enable memoization if you want it. For examples, see the examples/ui and examples/api directories.
+* Fix SQL reserved word use in get_all for ActiveRecord and Sequel (https://github.com/jnunemaker/flipper/pull/536).
+* Handle spaces in names gracefully in UI (https://github.com/jnunemaker/flipper/pull/541).
+
 ## 0.21.0
 
 ### Additions/Changes
@@ -7,6 +85,44 @@
 * Added cloud recommendation to flipper-ui. Can be disabled with `Flipper::UI.configure { |config| config.cloud_recommendation = false }`. Just want to raise awareness that more is available if people want it (https://github.com/jnunemaker/flipper/pull/504)
 * Added default `flipper_id` implementation via `Flipper::Identifier` and automatically included it in ActiveRecord and Sequel models (https://github.com/jnunemaker/flipper/pull/505)
 * Deprecate superflous sync_method setting (https://github.com/jnunemaker/flipper/pull/511)
+* Flipper is now pre-configured when used with Rails. By default, it will [memoize and preload all features for each request](https://flippercloud.io/docs/optimization#memoization). (https://github.com/jnunemaker/flipper/pull/506)
+
+### Upgrading
+
+You should be able to upgrade to 0.21 without any breaking changes. However, if you want to simplify your setup, you can remove some configuration that is now handled automatically:
+
+1. Adapters are configured when on require, so unless you are using caching or other customizations, you can remove adapter configuration.
+
+    ```diff
+    # config/initializers/flipper.rb
+    - Flipper.configure do |config|
+    -   config.default { Flipper.new(Flipper::Adapters::ActiveRecord.new) }
+    - end
+    ```
+
+2. `Flipper::Middleware::Memoizer` will be enabled by default -- including preloading. **Note**: You may want to disable preloading (see below) if you have > 100 features.
+
+    ```diff
+    # config/initializers/flipper.rb
+    - Rails.configuration.middleware.use Flipper::Middleware::Memoizer,
+    -   preload: [:stats, :search, :some_feature]
+    + Rails.application.configure do
+    +   # Uncomment to configure which features to preload on all requests
+    +   # config.flipper.preload = [:stats, :search, :some_feature]
+    +   #
+    +   # Or, you may want to disable preloading entirely:
+    +   # config.flipper.preload = false
+    + end
+    ```
+
+3. `#flipper_id`, which is used to enable features for specific actors, is now defined by [Flipper::Identifier](lib/flipper/identifier.rb) on all ActiveRecord and Sequel models. You can remove your implementation if it is in the form of `ModelName;id`.
+
+4. When using `flipper-cloud`, The `Flipper::Cloud.app` webhook receiver is now mounted at `/_flipper` by default.
+
+    ```diff
+    # config/routes.rb
+    - mount Flipper::Cloud.app, at: "/_flipper"
+    ```
 
 ## 0.20.4
 
@@ -14,6 +130,7 @@
 
 * Allow actors and time gates to deal with decimal percentages (https://github.com/jnunemaker/flipper/pull/492)
 * Change Flipper::Cloud::Middleware to receive webhooks at / in addition to /webhooks.
+* Add `write_through` option to ActiveSupportCacheStore adapter to support write-through caching (https://github.com/jnunemaker/flipper/pull/512)
 
 ## 0.20.3
 

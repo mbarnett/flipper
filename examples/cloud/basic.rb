@@ -1,20 +1,21 @@
 # Usage (from the repo root):
 # env FLIPPER_CLOUD_TOKEN=<token> bundle exec ruby examples/cloud/basic.rb
+
+require_relative "./cloud_setup"
 require 'bundler/setup'
 require 'flipper/cloud'
-flipper = Flipper::Cloud.new
 
-flipper[:stats].enable
+Flipper[:stats].enable
 
-if flipper[:stats].enabled?
+if Flipper[:stats].enabled?
   puts 'Enabled!'
 else
   puts 'Disabled!'
 end
 
-flipper[:stats].disable
+Flipper[:stats].disable
 
-if flipper[:stats].enabled?
+if Flipper[:stats].enabled?
   puts 'Enabled!'
 else
   puts 'Disabled!'

@@ -40,15 +40,25 @@ module Flipper
       builder.use Flipper::Cloud::Middleware, env_key: env_key
       builder.run app
       klass = self
-      builder.define_singleton_method(:inspect) { klass.inspect } # pretty rake routes output
-      builder
+      app = builder.to_app
+      app.define_singleton_method(:inspect) { klass.inspect } # pretty rake routes output
+      app
     end
 
     # Private: Configure Flipper to use Cloud by default
     def self.set_default
       Flipper.configure do |config|
-        config.default { self.new(local_adapter: config.adapter) }
+        config.default do
+          if ENV["FLIPPER_CLOUD_TOKEN"]
+            self.new(local_adapter: config.adapter)
+          else
+            warn "Missing FLIPPER_CLOUD_TOKEN environment variable. Disabling Flipper::Cloud."
+            Flipper.new(config.adapter)
+          end
+        end
       end
     end
   end
 end
+
+Flipper::Cloud.set_default

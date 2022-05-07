@@ -1,5 +1,3 @@
-require 'helper'
-
 RSpec.describe Flipper::UI::Actions::File do
   describe 'GET /images/logo.png' do
     before do
@@ -14,16 +12,6 @@ RSpec.describe Flipper::UI::Actions::File do
   describe 'GET /css/application.css' do
     before do
       get '/css/application.css'
-    end
-
-    it 'responds with 200' do
-      expect(last_response.status).to be(200)
-    end
-  end
-
-  describe 'GET /octicons/octicons.eot' do
-    before do
-      get '/octicons/octicons.eot'
     end
 
     it 'responds with 200' do

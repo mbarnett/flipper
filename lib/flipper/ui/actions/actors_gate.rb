@@ -25,19 +25,22 @@ module Flipper
         def post
           feature = flipper[feature_name]
           value = params['value'].to_s.strip
+          values = value.split(UI.configuration.actors_separator).map(&:strip).uniq
 
-          if Util.blank?(value)
-            error = Rack::Utils.escape("#{value.inspect} is not a valid actor value.")
+          if values.empty?
+            error = "#{value.inspect} is not a valid actor value."
             redirect_to("/features/#{feature.key}/actors?error=#{error}")
           end
 
-          actor = Flipper::Actor.new(value)
+          values.each do |value|
+            actor = Flipper::Actor.new(value)
 
-          case params['operation']
-          when 'enable'
-            feature.enable_actor actor
-          when 'disable'
-            feature.disable_actor actor
+            case params['operation']
+            when 'enable'
+              feature.enable_actor actor
+            when 'disable'
+              feature.disable_actor actor
+            end
           end
 
           redirect_to("/features/#{feature.key}")

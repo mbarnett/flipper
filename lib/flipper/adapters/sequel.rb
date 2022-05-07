@@ -97,11 +97,15 @@ module Flipper
       end
 
       def get_all
-        db_gates = @gate_class.fetch(<<-SQL).to_a
-          SELECT ff.key AS feature_key, fg.key, fg.value
-          FROM #{@feature_class.table_name} ff
-          LEFT JOIN #{@gate_class.table_name} fg ON ff.key = fg.feature_key
-        SQL
+        feature_table = @feature_class.table_name.to_sym
+        gate_table = @gate_class.table_name.to_sym
+        features_sql = @feature_class.select(:key.qualify(feature_table).as(:feature_key))
+            .select_append(:key.qualify(gate_table))
+            .select_append(:value.qualify(gate_table))
+            .left_join(@gate_class.table_name.to_sym, feature_key: :key)
+            .sql
+
+        db_gates = @gate_class.fetch(features_sql).to_a
         grouped_db_gates = db_gates.group_by(&:feature_key)
         result = Hash.new { |hash, key| hash[key] = default_config }
         features = grouped_db_gates.keys.map { |key| Flipper::Feature.new(key, self) }
@@ -175,7 +179,11 @@ module Flipper
         @gate_class.db.transaction do
           clear(feature) if clear_feature
           @gate_class.where(args).delete
-          @gate_class.create(gate_attrs(feature, gate, thing))
+
+          begin
+            @gate_class.create(gate_attrs(feature, gate, thing))
+          rescue ::Sequel::UniqueConstraintViolation
+          end
         end
       end
 
@@ -210,3 +218,9 @@ module Flipper
     end
   end
 end
+
+Flipper.configure do |config|
+  config.adapter { Flipper::Adapters::Sequel.new }
+end
+
+Sequel::Model.include Flipper::Identifier

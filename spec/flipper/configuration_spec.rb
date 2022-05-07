@@ -1,4 +1,3 @@
-require 'helper'
 require 'flipper/configuration'
 
 RSpec.describe Flipper::Configuration do
@@ -27,18 +26,6 @@ RSpec.describe Flipper::Configuration do
       expect(subject.default).not_to be(instance)
       subject.default { instance }
       expect(subject.default).to be(instance)
-    end
-  end
-
-  describe "#memoize" do
-    it 'defaults to true' do
-      expect(subject.memoize).to be(true)
-    end
-  end
-
-  describe "#preload" do
-    it 'defaults to true' do
-      expect(subject.preload).to be(true)
     end
   end
 end

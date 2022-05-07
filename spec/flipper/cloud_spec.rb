@@ -1,4 +1,3 @@
-require 'helper'
 require 'flipper/cloud'
 require 'flipper/adapters/instrumented'
 require 'flipper/instrumenters/memory'
@@ -66,9 +65,8 @@ RSpec.describe Flipper::Cloud do
   end
 
   it 'can initialize with no token explicitly provided' do
-    with_modified_env "FLIPPER_CLOUD_TOKEN" => "asdf" do
-      expect(described_class.new).to be_instance_of(Flipper::Cloud::DSL)
-    end
+    ENV['FLIPPER_CLOUD_TOKEN'] = 'asdf'
+    expect(described_class.new).to be_instance_of(Flipper::Cloud::DSL)
   end
 
   it 'can set instrumenter' do
@@ -114,10 +112,7 @@ RSpec.describe Flipper::Cloud do
 
   it 'can import' do
     stub_request(:post, /www\.flippercloud\.io\/adapter\/features.*/).
-      with(headers: {
-          'Feature-Flipper-Token'=>'asdf',
-          'Flipper-Cloud-Token'=>'asdf',
-      }).to_return(status: 200, body: "{}", headers: {})
+      with(headers: {'Flipper-Cloud-Token'=>'asdf'}).to_return(status: 200, body: "{}", headers: {})
 
     flipper = Flipper.new(Flipper::Adapters::Memory.new)
 
@@ -143,10 +138,7 @@ RSpec.describe Flipper::Cloud do
 
   it 'raises error for failure while importing' do
     stub_request(:post, /www\.flippercloud\.io\/adapter\/features.*/).
-      with(headers: {
-          'Feature-Flipper-Token'=>'asdf',
-          'Flipper-Cloud-Token'=>'asdf',
-      }).to_return(status: 500, body: "{}")
+      with(headers: {'Flipper-Cloud-Token'=>'asdf'}).to_return(status: 500, body: "{}")
 
     flipper = Flipper.new(Flipper::Adapters::Memory.new)
 
@@ -171,10 +163,7 @@ RSpec.describe Flipper::Cloud do
 
   it 'raises error for timeout while importing' do
     stub_request(:post, /www\.flippercloud\.io\/adapter\/features.*/).
-      with(headers: {
-          'Feature-Flipper-Token'=>'asdf',
-          'Flipper-Cloud-Token'=>'asdf',
-      }).to_timeout
+      with(headers: {'Flipper-Cloud-Token'=>'asdf'}).to_timeout
 
     flipper = Flipper.new(Flipper::Adapters::Memory.new)
 

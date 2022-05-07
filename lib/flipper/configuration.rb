@@ -1,20 +1,8 @@
 module Flipper
   class Configuration
-    # Public: A name of the key in the rack environment for the current Flipper instance (default: 'flipper')
-    attr_accessor :env_key
-
-    # Public: A boolean or lambda to determine if memoization should be enabled (default: true)
-    attr_accessor :memoize
-
-    # Public: An array of feature names or boolean to preload all for each request (default: true)
-    attr_accessor :preload
-
     def initialize(options = {})
       @default = -> { Flipper.new(adapter) }
       @adapter = -> { Flipper::Adapters::Memory.new }
-      @env_key = options.fetch(:env_key, 'flipper')
-      @memoize = options.fetch(:memoize, true)
-      @preload = options.fetch(:preload, true)
     end
 
     # The default adapter to use.
@@ -27,7 +15,7 @@ module Flipper
     #
     #     # Configure it to use the ActiveRecord adapter
     #     config.adapter do
-    #       require "flipper-active_record"
+    #       require "flipper/adapters/active_record"
     #       Flipper::Adapters::ActiveRecord.new
     #     end
     #
@@ -51,7 +39,7 @@ module Flipper
     #
     #   # sets the default block to generate a new instance using ActiveRecord adapter
     #   configuration.default do
-    #     require "flipper-active_record"
+    #     require "flipper/adapters/active_record"
     #     Flipper.new(Flipper::Adapters::ActiveRecord.new)
     #   end
     #
