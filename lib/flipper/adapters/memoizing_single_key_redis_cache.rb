@@ -82,7 +82,17 @@ module Flipper
         invalidate_cache!
       end
 
+      def reset_memo!
+        @get_all = nil
+      end
+
       private
+
+      def invalidate_cache!
+        reset_memo!
+        @client.set ALL_FEATURE_CACHE_KEY, nil
+        true
+      end
 
       def cache_value(ttl:, &value_lambda)
         cache = @client.get ALL_FEATURE_CACHE_KEY
@@ -94,12 +104,6 @@ module Flipper
           @client.setex ALL_FEATURE_CACHE_KEY, ttl, cache_value.to_json
           cache_value
         end
-      end
-
-      def invalidate_cache!
-        @client.set ALL_FEATURE_CACHE_KEY, nil
-        @get_all = nil
-        true
       end
 
       def default_value
