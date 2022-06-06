@@ -40,7 +40,7 @@ module Flipper
           @wrapped_adapter.get_all
         end
         puts '$' * 500
-
+        @get_all
       end
 
       # Note the ordering on the cache invalidation that follows – we want to update the underlying datastore
