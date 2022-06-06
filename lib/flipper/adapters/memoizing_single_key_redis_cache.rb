@@ -33,13 +33,18 @@ module Flipper
       end
 
       def get_all
+        puts '*' * 500
+        puts 'memo present' if @get_all.present?
         @get_all ||= cache_value ttl: 300 do
+          puts 'fetching from redis'
           @wrapped_adapter.get_all
         end
+        puts '$' * 500
+
       end
 
       # Note the ordering on the cache invalidation that follows – we want to update the underlying datastore
-      # and then blow away the cached data. Invalidating the cached data first would open up a
+      # and THEN blow away the cached data. Invalidating the cached data first would open up a
       # race condition where some other web process would read the original underlying keys' values,
       # we would write the new data to the underlying keys, and the other web process would write the old data
       # back to the cache before the new data got read and written
@@ -69,15 +74,11 @@ module Flipper
         invalidate_cache!
       end
 
-      def reset_memo!
-        @get_all = nil
-      end
-
       private
 
       def invalidate_cache!
-        reset_memo!
         @client.set ALL_FEATURE_CACHE_KEY, nil
+        @get_all = nil
         true
       end
 
@@ -85,6 +86,7 @@ module Flipper
         cache = @client.get ALL_FEATURE_CACHE_KEY
 
         if cache.present?
+          puts 'cached value present'
           features = JSON.parse(cache)
           # things come out of the cache pretty much the same, except that the two arrays
           # were originally sets, and the keys in the per-feature hashes (values of the parent hash)
@@ -97,6 +99,7 @@ module Flipper
 
           features
         else
+          puts 'no cache value present, caching'
           cache_value = value_lambda.call
           @client.setex ALL_FEATURE_CACHE_KEY, ttl, cache_value.to_json
           cache_value
