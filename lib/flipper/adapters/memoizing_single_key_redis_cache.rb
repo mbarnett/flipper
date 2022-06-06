@@ -33,13 +33,13 @@ module Flipper
       end
 
       def get_all
-        puts '*' * 500
-        puts 'memo present' if @get_all.present?
+        Rails.logger.info '*' * 500
+        Rails.logger.info 'memo present' if @get_all.present?
         @get_all ||= cache_value ttl: 300 do
-          puts 'fetching from redis'
+          Rails.logger.info 'fetching from redis'
           @wrapped_adapter.get_all
         end
-        puts '$' * 500
+        Rails.logger.info '$' * 500
         @get_all
       end
 
@@ -77,7 +77,7 @@ module Flipper
       private
 
       def invalidate_cache!
-        @client.set ALL_FEATURE_CACHE_KEY, nil
+        @client.del ALL_FEATURE_CACHE_KEY
         @get_all = nil
         true
       end
@@ -86,7 +86,7 @@ module Flipper
         cache = @client.get ALL_FEATURE_CACHE_KEY
 
         if cache.present?
-          puts 'cached value present'
+          Rails.logger.info 'cached value present'
           features = JSON.parse(cache)
           # things come out of the cache pretty much the same, except that the two arrays
           # were originally sets, and the keys in the per-feature hashes (values of the parent hash)
@@ -99,7 +99,7 @@ module Flipper
 
           features
         else
-          puts 'no cache value present, caching'
+          Rails.logger.info 'no cache value present, caching'
           cache_value = value_lambda.call
           @client.setex ALL_FEATURE_CACHE_KEY, ttl, cache_value.to_json
           cache_value
