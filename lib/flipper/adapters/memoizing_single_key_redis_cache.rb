@@ -33,7 +33,7 @@ module Flipper
       end
 
       def get_all
-        @get_all = cache_value ttl: 300 do
+        @get_all ||= cache_value ttl: 300 do
           @wrapped_adapter.get_all
         end
       end
