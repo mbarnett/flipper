@@ -33,21 +33,8 @@ module Flipper
       end
 
       def get_all
-        @get_all ||= begin
-          all_features = cache_value ttl: 300 do
-            @wrapped_adapter.get_all
-          end
-
-          # things come out of the cache pretty much the same, except that the two arrays
-          # were originally sets, and the keys in the per-feature hashes (values of the parent hash)
-          # were originally symbols. So we do a quick fix-up:
-          all_features.each_value do |feature_hash|
-            feature_hash.symbolize_keys!
-            feature_hash[:actors] = feature_hash[:actors]&.to_set
-            feature_hash[:groups] = feature_hash[:groups]&.to_set
-          end
-
-          all_features
+        cache_value ttl: 300 do
+          @wrapped_adapter.get_all
         end
       end
 
@@ -98,7 +85,17 @@ module Flipper
         cache = @client.get ALL_FEATURE_CACHE_KEY
 
         if cache.present?
-          JSON.parse(cache)
+          features = JSON.parse(cache)
+          # things come out of the cache pretty much the same, except that the two arrays
+          # were originally sets, and the keys in the per-feature hashes (values of the parent hash)
+          # were originally symbols. So we do a quick fix-up:
+          features.each_value do |feature_hash|
+            feature_hash.symbolize_keys!
+            feature_hash[:actors] = feature_hash[:actors]&.to_set
+            feature_hash[:groups] = feature_hash[:groups]&.to_set
+          end
+
+          features
         else
           cache_value = value_lambda.call
           @client.setex ALL_FEATURE_CACHE_KEY, ttl, cache_value.to_json
