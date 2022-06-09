@@ -1,5 +1,9 @@
 require 'flipper'
 
+require 'active_support'
+require "active_support/core_ext/object"
+
+
 module Flipper
   module Adapters
     class MemoizingSingleKeyRedisCache
@@ -16,7 +20,7 @@ module Flipper
       end
 
       def features
-        get_all.keys
+        get_all.keys.to_set
       end
 
       def get(feature)
@@ -60,11 +64,13 @@ module Flipper
       end
 
       def enable(feature, gate, thing)
+        ensure_known(feature)
         @wrapped_adapter.enable(feature, gate, thing)
         invalidate_cache!
       end
 
       def disable(feature, gate, thing)
+        ensure_known(feature)
         @wrapped_adapter.disable(feature, gate, thing)
         invalidate_cache!
       end
@@ -75,6 +81,12 @@ module Flipper
         @client.del ALL_FEATURE_CACHE_KEY
         @get_all = nil
         true
+      end
+
+      def ensure_known(feature)
+        unless get_all[feature.key].present?
+          @wrapped_adapter.add(feature)
+        end
       end
 
       def cache_value(ttl:, &value_lambda)
